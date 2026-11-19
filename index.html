@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delicias de Mar del Plata — Carta Digital</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            bar: {
+              bg: '#0b0d12',
+              card: '#141821',
+              cardHover: '#1a202c',
+              border: '#242b38',
+              accent: '#f59e0b',
+              accentHover: '#d97706',
+              text: '#f8fafc',
+              muted: '#94a3b8'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Ocultar barra de desplazamiento horizontal en pestañas manteniendo funcionalidad táctil */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      background-color: #0b0d12;
+      color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- Modal / Panel oculto de configuración y guía de Google Sheets -->
+  <div id="config-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm overflow-y-auto p-4 sm:p-6">
+    <div class="max-w-2xl mx-auto bg-bar-card border-2 border-amber-500/50 rounded-2xl p-5 sm:p-7 shadow-2xl my-4">
+      <div class="flex items-start justify-between gap-4 pb-4 mb-5 border-b border-bar-border">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mb-1.5">
+            Configuración sin código
+          </span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-white">
+            Conectar con Google Sheets
+          </h2>
+          <p class="text-xs sm:text-sm text-bar-muted mt-1">
+            El equipo del bar solo edita una planilla de Google; el código en GitHub no vuelve a tocarse.
+          </p>
+        </div>
+        <button onclick="closeConfigModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white p-2 rounded-xl transition cursor-pointer" title="Cerrar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Paso 1: Estructura de columnas -->
+      <div class="space-y-5 text-sm">
+        <div class="bg-[#0e1118] border border-bar-border rounded-xl p-4">
+          <h3 class="font-bold text-amber-400 mb-1.5">1. Armá la planilla con estas 6 columnas exactas</h3>
+          <p class="text-xs text-bar-muted mb-3">
+            En la fila 1 de Google Sheets colocá estos encabezados (en <code class="text-slate-200">Disponible</code> usá <code class="text-emerald-400">SI</code> o <code class="text-rose-400">NO</code>):
+          </p>
+          <div class="overflow-x-auto bg-bar-card border border-bar-border rounded-lg p-2.5 font-mono text-xs text-amber-300 whitespace-nowrap">
+            Categoria | Nombre | Descripcion | Precio | Etiqueta | Disponible
+          </div>
+          <div class="mt-3">
+            <a
+              href="https://sheets.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-amber-500/40 transition"
+            >
+            <span>Abrir Google Sheets para crear o editar la planilla</span></a>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button onclick="copySheetHeaders()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl border border-bar-border transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Copiar encabezados
+            </button>
+            <button onclick="downloadSampleCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Descargar plantilla .csv de ejemplo
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Publicar en la web -->
+        <div class="bg-[#0e1118] border border-bar-border rounded-xl p-4">
+          <h3 class="font-bold text-amber-400 mb-1.5">2. Publicá la hoja como CSV</h3>
+          <ol class="list-decimal list-inside space-y-1 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <li>En Google Sheets andá a <strong class="text-white">Archivo → Compartir → Publicar en la web</strong>.</li>
+            <li>En el primer desplegable elegí tu hoja (ej. <strong class="text-white">Hoja 1</strong>).</li>
+            <li>En el segundo desplegable elegí <strong class="text-amber-300">Valores separados por comas (.csv)</strong>.</li>
+            <li>Tocá <strong class="text-white">Publicar</strong> y copiá el enlace generado.</li>
+          </ol>
+        </div>
+
+        <!-- Paso 3: Probador en vivo y guardado fijo -->
+        <div class="bg-[#0e1118] border border-bar-border rounded-xl p-4 space-y-3">
+          <div>
+            <h3 class="font-bold text-amber-400">3. Probador en vivo de tu enlace CSV</h3>
+            <p class="text-xs text-bar-muted mt-0.5">
+              Pegá acá el enlace <code class="text-slate-200">...pub?output=csv</code> para probar cómo carga la carta ahora mismo. Para dejarlo fijo para todos los clientes, pegalo una única vez en <code class="text-amber-300">const SHEET_CSV_URL</code> dentro de este archivo.
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              type="url"
+              id="test-csv-url-input"
+              placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+              class="flex-1 bg-bar-card border border-bar-border focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none"
+            />
+            <button onclick="testLiveSheetURL()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0">
+              Probar enlace
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <span id="config-status-text" class="text-xs text-bar-muted">
+              Estado actual: Usando datos de ejemplo integrados.
+            </span>
+            <button onclick="resetCustomSheetURL()" class="text-xs text-slate-400 hover:text-white underline cursor-pointer">
+              Volver a configuración por defecto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Encabezado principal del Bar -->
+  <header class="bg-gradient-to-b from-slate-900 to-[#0b0d12] border-b border-bar-border pt-7 pb-5 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold tracking-wider uppercase mb-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Abierto hoy · 07 a 00 hs
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        Delicias de Mar del Plata
+      </h1>
+      <p class="text-bar-muted text-sm sm:text-base mt-1.5 max-w-md mx-auto">
+        Carta Digital
+      </p>
+
+      <!-- Buscador rápido -->
+      <div class="mt-5 relative max-w-xl mx-auto">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/></svg>
+        </div>
+        <input
+          type="search"
+          id="search-input"
+          oninput="handleSearch(this.value)"
+          placeholder="Buscar trago, cerveza, ingrediente o comida..."
+          class="w-full bg-bar-card border border-bar-border focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-white placeholder-slate-400 text-sm sm:text-base rounded-2xl pl-11 pr-4 py-3 outline-none transition"
+        />
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de filtros por categoría (sticky) -->
+  <nav id="category-nav" class="sticky top-0 z-30 bg-[#0b0d12]/95 backdrop-blur-md border-b border-bar-border py-3 px-4">
+    <div id="category-tabs" class="max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <!-- Se renderizan dinámicamente según las categorías de la planilla -->
+    </div>
+  </nav>
+
+  <!-- Contenedor principal -->
+  <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
+
+    <!-- Pantalla de carga (skeleton/spinner) mientras descarga el CSV -->
+    <div id="loading-state" class="hidden space-y-4 py-6">
+      <div class="flex items-center justify-center gap-3 text-amber-400 text-sm font-medium mb-4">
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span>Actualizando carta del bar...</span>
+      </div>
+      <div class="bg-bar-card border border-bar-border rounded-2xl p-5 animate-pulse space-y-2.5">
+        <div class="h-4 bg-slate-800 rounded w-1/3"></div>
+        <div class="h-3 bg-slate-800/80 rounded w-3/4"></div>
+      </div>
+      <div class="bg-bar-card border border-bar-border rounded-2xl p-5 animate-pulse space-y-2.5">
+        <div class="h-4 bg-slate-800 rounded w-2/5"></div>
+        <div class="h-3 bg-slate-800/80 rounded w-2/3"></div>
+      </div>
+    </div>
+
+    <!-- Vista pública de la carta para clientes -->
+    <section id="public-menu">
+      <!-- Control discreto para ocultar/mostrar agotados -->
+      <div class="flex items-center justify-end mb-4">
+        <label class="inline-flex items-center gap-2 text-xs text-bar-muted hover:text-slate-200 cursor-pointer select-none">
+          <input type="checkbox" id="hide-out-of-stock" onchange="toggleHideOutOfStock(this.checked)" class="rounded accent-amber-500 cursor-pointer" />
+          <span>Ocultar productos agotados</span>
+        </label>
+      </div>
+
+      <div id="menu-container" class="space-y-8">
+        <!-- Se renderizan las categorías y tarjetas de productos aquí -->
+      </div>
+
+      <!-- Mensaje cuando no hay resultados de búsqueda -->
+      <div id="empty-state" class="hidden text-center py-14 px-4 bg-bar-card/60 border border-bar-border rounded-2xl">
+        <p class="text-lg font-semibold text-white">No encontramos productos con ese filtro</p>
+        <p class="text-sm text-bar-muted mt-1">Probá buscando con otra palabra o seleccioná "Todos".</p>
+        <button onclick="clearFilters()" class="mt-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm px-4 py-2.5 rounded-xl transition cursor-pointer">
+          Ver toda la carta
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast de notificaciones -->
+  <div id="toast" class="fixed bottom-5 right-5 left-5 sm:left-auto z-50 hidden max-w-sm bg-slate-900 border border-amber-500/60 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+    <p id="toast-message" class="text-sm font-medium"></p>
+  </div>
+
+  <!-- Pie de página con activador oculto (5 clics rápidos) y botón de actualización -->
+  <footer class="border-t border-bar-border bg-[#080a0e] py-6 px-4 text-center text-xs text-bar-muted space-y-2">
+    <p class="select-none cursor-default inline-block py-1 px-2 rounded-lg" id="secret-footer-trigger">
+      © Delicias de Mar del Plata
+    </p>
+    <p class="text-slate-500">Si tenés alguna alergia o intolerancia alimentaria, consultá a nuestro equipo.</p>
+    <div class="pt-1 flex items-center justify-center gap-3 text-[11px] text-slate-500">
+      <span id="last-updated-label">Carta cargada</span>
+      <span>·</span>
+      <button onclick="reloadMenuData(true)" class="inline-flex items-center gap-1 text-slate-400 hover:text-amber-400 transition cursor-pointer" title="Volver a consultar precios">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Actualizar precios
+      </button>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- DATOS DE RESPALDO (FALLBACK) SI AÚN NO SE CONFIGURÓ GOOGLE SHEETS     -->
+  <!-- ===================================================================== -->
+  <script id="fallback-menu-data" type="application/json">
+[
+  {
+    "id": 1,
+    "name": "Pinta IPA Nocturna",
+    "category": "Cervezas",
+    "description": "Cerveza artesanal lupulada con notas cítricas y amargor equilibrado (500 ml).",
+    "price": 4800,
+    "tag": "Happy Hour",
+    "inStock": true
+  },
+  {
+    "id": 2,
+    "name": "Pinta Honey Dorada",
+    "category": "Cervezas",
+    "description": "Suave, refrescante y con un toque sutil de miel de azahar (500 ml).",
+    "price": 4500,
+    "tag": "",
+    "inStock": true
+  },
+  {
+    "id": 3,
+    "name": "Pinta Irish Red",
+    "category": "Cervezas",
+    "description": "Rojiza de cuerpo medio, maltas tostadas y final seco (500 ml).",
+    "price": 4600,
+    "tag": "",
+    "inStock": false
+  },
+  {
+    "id": 4,
+    "name": "Negroni de la Casa",
+    "category": "Tragos",
+    "description": "Gin macerado en piel de naranja, vermú rosso y Campari con hielo cristalino.",
+    "price": 6900,
+    "tag": "Recomendado",
+    "inStock": true
+  },
+  {
+    "id": 5,
+    "name": "Gin Tonic Botánico",
+    "category": "Tragos",
+    "description": "Gin artesanal, agua tónica premium, pepino fresco y bayas de enebro.",
+    "price": 6500,
+    "tag": "Happy Hour",
+    "inStock": true
+  },
+  {
+    "id": 6,
+    "name": "Fernet con Coca (Vaso Largo)",
+    "category": "Tragos",
+    "description": "Clásico infaltable 70/30 bien frío con mucho hielo.",
+    "price": 5800,
+    "tag": "",
+    "inStock": true
+  },
+  {
+    "id": 7,
+    "name": "Penicillin Ahumado",
+    "category": "Tragos",
+    "description": "Whisky escocés, almíbar de miel y jengibre, jugo de limón fresco y perfume ahumado.",
+    "price": 7600,
+    "tag": "Nuevo",
+    "inStock": true
+  },
+  {
+    "id": 8,
+    "name": "Limonada de Menta y Jengibre",
+    "category": "Sin Alcohol",
+    "description": "Limón exprimido en el momento, hojas de menta fresca, jengibre y soda (500 ml).",
+    "price": 3900,
+    "tag": "Sin TACC",
+    "inStock": true
+  },
+  {
+    "id": 9,
+    "name": "Mocktail Frutos Rojos & Hibiscus",
+    "category": "Sin Alcohol",
+    "description": "Infusión fría de hibiscus, frutos rojos del bosque, lima y tónica.",
+    "price": 4400,
+    "tag": "Sin TACC",
+    "inStock": true
+  },
+  {
+    "id": 10,
+    "name": "Agua Mineral / Gaseosa 500 ml",
+    "category": "Sin Alcohol",
+    "description": "Agua con o sin gas, línea Coca-Cola o agua tónica.",
+    "price": 2800,
+    "tag": "Sin TACC",
+    "inStock": true
+  },
+  {
+    "id": 11,
+    "name": "Papas Nocturnas Gratinadas",
+    "category": "Picadas y Comida",
+    "description": "Papas rústicas crocantes con cheddar fundido, panceta ahumada y verdeo.",
+    "price": 8900,
+    "tag": "Recomendado",
+    "inStock": true
+  },
+  {
+    "id": 12,
+    "name": "Tabla La Barra (Para 2 o 3)",
+    "category": "Picadas y Comida",
+    "description": "Queso reggianito, gouda, jamón crudo, bondiola, aceitunas marinadas, frutos secos y pan de masa madre.",
+    "price": 16500,
+    "tag": "",
+    "inStock": true
+  },
+  {
+    "id": 13,
+    "name": "Hamburguesa Doble Smash",
+    "category": "Picadas y Comida",
+    "description": "Doble medallón de carne, doble cheddar, cebolla caramelizada, salsa de la casa y papas fritas.",
+    "price": 11800,
+    "tag": "",
+    "inStock": true
+  },
+  {
+    "id": 14,
+    "name": "Nachos con Guacamole y Pico de Gallo",
+    "category": "Picadas y Comida",
+    "description": "Totopos de maíz crocantes con palta pisada al momento, tomate, cilantro y crema ácida.",
+    "price": 8200,
+    "tag": "Sin TACC",
+    "inStock": true
+  }
+]
+  </script>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA DE CONEXIÓN A GOOGLE SHEETS (CSV) Y RENDERIZADO DE LA CARTA    -->
+  <!-- ===================================================================== -->
+  <script>
+    // =========================================================================
+    // CONFIGURACIÓN PRINCIPAL:
+    // Pegá entre las comillas el enlace CSV publicado de tu Google Sheet.
+    // Ejemplo: 'https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv'
+    // Si queda vacío (''), la carta mostrará los productos de ejemplo integrados.
+    // =========================================================================
+    const SHEET_CSV_URL = '';
+
+    const TEST_URL_STORAGE_KEY = 'la_barra_nocturna_test_csv_url_v1';
+
+    let menuItems = [];
+    let dynamicCategories = ['Todos'];
+    let selectedCategory = 'Todos';
+    let searchQuery = '';
+    let hideOutOfStock = false;
+    let toastTimeout = null;
+
+    // Obtener la URL activa (prioriza la del código; si está vacía, revisa si hay una de prueba local)
+    function getActiveSheetURL() {
+      const configured = (SHEET_CSV_URL || '').trim();
+      if (configured) return configured;
+      try {
+        return (localStorage.getItem(TEST_URL_STORAGE_KEY) || '').trim();
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // Obtener productos de respaldo integrados en el HTML
+    function getFallbackItems() {
+      try {
+        const raw = document.getElementById('fallback-menu-data').textContent;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error('Error leyendo datos de respaldo:', e);
+        return [];
+      }
+    }
+
+    // Formatear moneda en pesos argentinos
+    function formatPrice(value) {
+      const num = Number(value) || 0;
+      return '$' + num.toLocaleString('es-AR');
+    }
+
+    // Escapar HTML para evitar inyecciones al renderizar textos de la planilla
+    function escapeHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Mostrar notificación suave
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3800);
+    }
+
+    // Normalizar nombres de encabezados (quita tildes, espacios y pasa a minúsculas)
+    function normalizeHeader(header) {
+      return String(header || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    // Parser CSV robusto en JavaScript vanilla (soporta comillas, comas internas y saltos de línea)
+    function parseCSV(csvText) {
+      const rows = [];
+      let currentRow = [];
+      let currentField = '';
+      let insideQuotes = false;
+
+      // Normalizar saltos de línea CRLF a LF
+      const text = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (insideQuotes) {
+          if (char === '"' && nextChar === '"') {
+            currentField += '"';
+            i++;
+          } else if (char === '"') {
+            insideQuotes = false;
+          } else {
+            currentField += char;
+          }
+        } else {
+          if (char === '"') {
+            insideQuotes = true;
+          } else if (char === ',') {
+            currentRow.push(currentField);
+            currentField = '';
+          } else if (char === '\n') {
+            currentRow.push(currentField);
+            rows.push(currentRow);
+            currentRow = [];
+            currentField = '';
+          } else {
+            currentField += char;
+          }
+        }
+      }
+
+      if (currentField.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+      }
+
+      return rows.filter(row => row.some(cell => cell.trim() !== ''));
+    }
+
+    // Convertir filas del CSV a objetos de productos de la carta
+    function mapCSVRowsToItems(rows) {
+      if (!rows || rows.length < 2) return [];
+
+      const headers = rows[0].map(normalizeHeader);
+      const colIndex = {
+        category: headers.findIndex(h => h === 'categoria' || h === 'category'),
+        name: headers.findIndex(h => h === 'nombre' || h === 'producto' || h === 'name'),
+        description: headers.findIndex(h => h === 'descripcion' || h === 'detalle' || h === 'description'),
+        price: headers.findIndex(h => h === 'precio' || h === 'valor' || h === 'price'),
+        tag: headers.findIndex(h => h === 'etiqueta' || h === 'tag' || h === 'promo'),
+        available: headers.findIndex(h => h === 'disponible' || h === 'stock' || h === 'available')
+      };
+
+      const items = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const rawName = colIndex.name >= 0 ? (row[colIndex.name] || '').trim() : '';
+        if (!rawName) continue; // Ignorar filas sin nombre de producto
+
+        const rawCategory = colIndex.category >= 0 ? (row[colIndex.category] || '').trim() : '';
+        const rawDesc = colIndex.description >= 0 ? (row[colIndex.description] || '').trim() : '';
+        const rawPrice = colIndex.price >= 0 ? (row[colIndex.price] || '').trim() : '0';
+        const rawTag = colIndex.tag >= 0 ? (row[colIndex.tag] || '').trim() : '';
+        const rawAvail = colIndex.available >= 0 ? (row[colIndex.available] || '').trim() : 'SI';
+
+        // Limpiar formato de precio (ej: "$ 4.800,00" o "4800")
+        const numericPrice = parseFloat(
+          rawPrice
+            .replace(/[^0-9,.-]/g, '')
+            .replace(/\.(?=\d{3}(?:,|$))/g, '')
+            .replace(',', '.')
+        ) || 0;
+
+        // Evaluar disponibilidad: SI, SÍ, TRUE, 1 => true; cualquier otro valor o NO => false
+        const normalizedAvail = normalizeHeader(rawAvail).toUpperCase();
+        const inStock = ['SI', 'TRUE', '1', 'YES', 'DISPONIBLE'].includes(normalizedAvail);
+
+        items.push({
+          id: i,
+          category: rawCategory || 'General',
+          name: rawName,
+          description: rawDesc,
+          price: numericPrice,
+          tag: rawTag,
+          inStock
+        });
+      }
+
+      return items;
+    }
+
+    // Construir lista dinámica de categorías respetando el orden de aparición en la planilla
+    function updateDynamicCategories() {
+      const seen = new Set();
+      const cats = ['Todos'];
+      menuItems.forEach(item => {
+        const cat = (item.category || 'General').trim();
+        if (cat && !seen.has(cat)) {
+          seen.add(cat);
+          cats.push(cat);
+        }
+      });
+      dynamicCategories = cats;
+      if (!dynamicCategories.includes(selectedCategory)) {
+        selectedCategory = 'Todos';
+      }
+    }
+
+    // Actualizar etiqueta de última actualización y estado del modal
+    function updateStatusIndicators(sourceType, errorMsg = '') {
+      const footerLabel = document.getElementById('last-updated-label');
+      const modalStatus = document.getElementById('config-status-text');
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+      if (sourceType === 'sheet') {
+        footerLabel.textContent = `Precios sincronizados · ${timeStr} hs`;
+        modalStatus.innerHTML = `<span class="text-emerald-400 font-semibold">Conectado a Google Sheets</span> (${menuItems.length} productos cargados).`;
+      } else if (sourceType === 'error') {
+        footerLabel.textContent = `Mostrando carta de respaldo · ${timeStr} hs`;
+        modalStatus.innerHTML = `<span class="text-rose-400 font-semibold">No se pudo leer el CSV:</span> ${escapeHTML(errorMsg)}`;
+      } else {
+        footerLabel.textContent = `Carta de ejemplo · ${timeStr} hs`;
+        modalStatus.textContent = 'Estado actual: Usando datos de ejemplo integrados.';
+      }
+    }
+
+    // Cargar datos desde Google Sheets (con cache-busting) o usar respaldo
+    async function reloadMenuData(manualTrigger = false) {
+      const sheetURL = getActiveSheetURL();
+      const loadingEl = document.getElementById('loading-state');
+      const publicMenuEl = document.getElementById('public-menu');
+
+      if (!sheetURL) {
+        menuItems = getFallbackItems();
+        updateDynamicCategories();
+        renderCategoryTabs();
+        renderPublicMenu();
+        updateStatusIndicators('fallback');
+        if (manualTrigger) {
+          showToast('Mostrando carta de ejemplo (aún no hay Google Sheet vinculada).');
+        }
+        return;
+      }
+
+      // Mostrar pantalla de carga
+      loadingEl.classList.remove('hidden');
+      publicMenuEl.classList.add('opacity-40', 'pointer-events-none');
+
+      try {
+        const separator = sheetURL.includes('?') ? '&' : '?';
+        const urlWithCacheBuster = `${sheetURL}${separator}t=${Date.now()}`;
+
+        const response = await fetch(urlWithCacheBuster, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const csvText = await response.text();
+        // Verificar que no haya devuelto HTML de inicio de sesión en lugar de CSV
+        if (csvText.trim().startsWith('<!DOCTYPE') || csvText.trim().startsWith('<html')) {
+          throw new Error('El enlace no es un CSV público. Revisá "Publicar en la web -> .csv".');
+        }
+
+        const rows = parseCSV(csvText);
+        const parsedItems = mapCSVRowsToItems(rows);
+
+        if (parsedItems.length === 0) {
+          throw new Error('La planilla no tiene filas válidas o faltan las columnas Nombre/Precio.');
+        }
+
+        menuItems = parsedItems;
+        updateDynamicCategories();
+        renderCategoryTabs();
+        renderPublicMenu();
+        updateStatusIndicators('sheet');
+
+        if (manualTrigger) {
+          showToast('¡Precios y productos actualizados desde Google Sheets!');
+        }
+      } catch (err) {
+        console.error('Error cargando Google Sheet:', err);
+        menuItems = getFallbackItems();
+        updateDynamicCategories();
+        renderCategoryTabs();
+        renderPublicMenu();
+        updateStatusIndicators('error', err.message || 'Error de red');
+        showToast('No se pudo cargar la planilla; se muestran datos de respaldo.');
+      } finally {
+        loadingEl.classList.add('hidden');
+        publicMenuEl.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    // Renderizar pestañas de categorías dinámicas
+    function renderCategoryTabs() {
+      const container = document.getElementById('category-tabs');
+      container.innerHTML = dynamicCategories.map(cat => {
+        const active = selectedCategory === cat;
+        const baseClasses = 'shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer select-none';
+        const stateClasses = active
+          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+          : 'bg-bar-card text-bar-muted hover:text-white border border-bar-border';
+        return `<button onclick="selectCategory('${escapeHTML(cat).replace(/'/g, "\\'")}')" class="${baseClasses} ${stateClasses}">${escapeHTML(cat)}</button>`;
+      }).join('');
+    }
+
+    // Estilos de etiquetas visuales
+    function getTagBadgeHTML(tag, inStock) {
+      if (!inStock) {
+        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">Agotado</span>`;
+      }
+      if (!tag) return '';
+      const normalized = tag.trim().toLowerCase();
+      let colorClass = 'bg-slate-800 text-slate-200 border-slate-700';
+      if (normalized.includes('happy')) {
+        colorClass = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+      } else if (normalized.includes('tacc') || normalized.includes('vegano') || normalized.includes('sin gluten')) {
+        colorClass = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      } else if (normalized.includes('recomendado') || normalized.includes('nuevo')) {
+        colorClass = 'bg-sky-500/15 text-sky-400 border-sky-500/30';
+      } else if (normalized.includes('picante')) {
+        colorClass = 'bg-orange-500/15 text-orange-400 border-orange-500/30';
+      }
+      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${colorClass}">${escapeHTML(tag)}</span>`;
+    }
+
+    // Renderizar vista pública de la carta
+    function renderPublicMenu() {
+      const container = document.getElementById('menu-container');
+      const emptyState = document.getElementById('empty-state');
+      const query = searchQuery.trim().toLowerCase();
+
+      const filtered = menuItems.filter(item => {
+        if (hideOutOfStock && !item.inStock) return false;
+        const matchesCat = selectedCategory === 'Todos' || item.category === selectedCategory;
+        const matchesQuery =
+          !query ||
+          item.name.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          (item.tag && item.tag.toLowerCase().includes(query));
+        return matchesCat && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      const catsToRender = selectedCategory === 'Todos'
+        ? dynamicCategories.filter(c => c !== 'Todos')
+        : [selectedCategory];
+
+      container.innerHTML = catsToRender.map(cat => {
+        const itemsInCat = filtered.filter(i => i.category === cat);
+        if (itemsInCat.length === 0) return '';
+
+        const cardsHTML = itemsInCat.map(item => {
+          const outOfStock = !item.inStock;
+          return `
+            <article class="bg-bar-card border border-bar-border ${outOfStock ? 'opacity-60' : 'hover:border-slate-600'} rounded-2xl p-4 sm:p-5 transition flex justify-between items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-white leading-snug ${outOfStock ? 'line-through decoration-slate-500' : ''}">
+                    ${escapeHTML(item.name)}
+                  </h3>
+                  ${getTagBadgeHTML(item.tag, item.inStock)}
+                </div>
+                ${item.description ? `<p class="text-bar-muted text-sm mt-1.5 leading-relaxed">${escapeHTML(item.description)}</p>` : ''}
+              </div>
+              <div class="shrink-0 text-right">
+                <span class="inline-block text-base sm:text-lg font-extrabold ${outOfStock ? 'text-slate-500' : 'text-amber-400'} tracking-tight">
+                  ${formatPrice(item.price)}
+                </span>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        return `
+          <div>
+            <div class="flex items-center gap-3 mb-3.5">
+              <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">${escapeHTML(cat)}</h2>
+              <div class="h-px flex-1 bg-bar-border"></div>
+              <span class="text-xs font-medium text-bar-muted">${itemsInCat.length}</span>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+              ${cardsHTML}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Filtros y controles de usuario
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategoryTabs();
+      renderPublicMenu();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val;
+      renderPublicMenu();
+    }
+
+    function toggleHideOutOfStock(checked) {
+      hideOutOfStock = checked;
+      renderPublicMenu();
+    }
+
+    function clearFilters() {
+      selectedCategory = 'Todos';
+      searchQuery = '';
+      hideOutOfStock = false;
+      document.getElementById('search-input').value = '';
+      document.getElementById('hide-out-of-stock').checked = false;
+      renderCategoryTabs();
+      renderPublicMenu();
+    }
+
+    // =========================================================================
+    // FUNCIONES DEL MODAL OCULTO DE CONFIGURACIÓN (#config o 5 clics)
+    // =========================================================================
+    function openConfigModal() {
+      const modal = document.getElementById('config-modal');
+      const input = document.getElementById('test-csv-url-input');
+      input.value = getActiveSheetURL();
+      modal.classList.remove('hidden');
+      if (window.location.hash !== '#config') {
+        history.replaceState(null, '', '#config');
+      }
+    }
+
+    function closeConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.add('hidden');
+      if (window.location.hash === '#config') {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
+    // Copiar encabezados listos para pegar en Google Sheets
+    function copySheetHeaders() {
+      const headersTSV = 'Categoria\tNombre\tDescripcion\tPrecio\tEtiqueta\tDisponible';
+      const tempInput = document.createElement('textarea');
+      tempInput.value = headersTSV;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('¡Encabezados copiados! Pegalos en la celda A1 de Google Sheets.');
+      } catch (e) {
+        showToast('No se pudo copiar automáticamente.');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    // Descargar plantilla CSV de ejemplo lista para importar a Google Sheets
+    function downloadSampleCSV() {
+      const csvRows = [
+        ['Categoria', 'Nombre', 'Descripcion', 'Precio', 'Etiqueta', 'Disponible'],
+        ['Cervezas', 'Pinta IPA Nocturna', 'Cerveza artesanal lupulada con notas cítricas (500 ml).', '4800', 'Happy Hour', 'SI'],
+        ['Cervezas', 'Pinta Honey Dorada', 'Suave y refrescante con toque sutil de miel (500 ml).', '4500', '', 'SI'],
+        ['Cervezas', 'Pinta Irish Red', 'Rojiza de cuerpo medio y maltas tostadas (500 ml).', '4600', '', 'NO'],
+        ['Tragos', 'Negroni de la Casa', 'Gin macerado en piel de naranja, vermú rosso y Campari.', '6900', 'Recomendado', 'SI'],
+        ['Tragos', 'Gin Tonic Botánico', 'Gin artesanal, tónica premium, pepino y enebro.', '6500', 'Happy Hour', 'SI'],
+        ['Sin Alcohol', 'Limonada Menta y Jengibre', 'Limón exprimido, menta fresca, jengibre y soda.', '3900', 'Sin TACC', 'SI'],
+        ['Picadas y Comida', 'Papas Nocturnas Gratinadas', 'Papas rústicas con cheddar fundido, panceta y verdeo.', '8900', 'Recomendado', 'SI'],
+        ['Picadas y Comida', 'Tabla La Barra (Para 2 o 3)', 'Selección de quesos, fiambres, aceitunas y pan de masa madre.', '16500', '', 'SI']
+      ];
+
+      const csvContent = '\uFEFF' + csvRows.map(row =>
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'plantilla-carta-bar.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('Plantilla CSV descargada. Importala en Google Sheets.');
+    }
+
+    // Probar enlace CSV en vivo desde el modal
+    async function testLiveSheetURL() {
+      const input = document.getElementById('test-csv-url-input');
+      const url = input.value.trim();
+      if (!url) {
+        showToast('Pegá primero el enlace CSV publicado de Google Sheets.');
+        return;
+      }
+      try {
+        localStorage.setItem(TEST_URL_STORAGE_KEY, url);
+      } catch (e) {}
+      await reloadMenuData(true);
+    }
+
+    // Limpiar enlace de prueba local
+    async function resetCustomSheetURL() {
+      try {
+        localStorage.removeItem(TEST_URL_STORAGE_KEY);
+      } catch (e) {}
+      document.getElementById('test-csv-url-input').value = SHEET_CSV_URL || '';
+      await reloadMenuData(true);
+    }
+
+    // Activador oculto por 5 clics rápidos en el pie de página
+    function setupSecretTrigger() {
+      const trigger = document.getElementById('secret-footer-trigger');
+      let clickCount = 0;
+      let clickTimer = null;
+
+      trigger.addEventListener('click', () => {
+        clickCount++;
+        clearTimeout(clickTimer);
+        if (clickCount >= 5) {
+          clickCount = 0;
+          openConfigModal();
+        } else {
+          clickTimer = setTimeout(() => {
+            clickCount = 0;
+          }, 1500);
+        }
+      });
+    }
+
+    window.addEventListener('hashchange', () => {
+      if (window.location.hash === '#config') {
+        openConfigModal();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setupSecretTrigger();
+      reloadMenuData(false);
+
+      if (window.location.hash === '#config') {
+        openConfigModal();
+      }
+    });
+  </script>
+</body>
+</html>
